@@ -230,32 +230,164 @@ function updateFortniteUI(data) {
     updateTimestamp();
 }
 
-// Fetch Brawl Stars status from DownDetector
+// Fetch Brawl Stars status - checking for maintenance
 async function fetchBrawlStarsStatus() {
     showLoading('brawlstars');
     
+    // First, check Supercell's official status page
     try {
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://downdetector.co.uk/status/brawl-stars/')}`);
-        
-        if (response.ok) {
-            const data = await response.json();
+        const supercellResponse = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://status.supercell.com/')}`);
+        if (supercellResponse.ok) {
+            const data = await supercellResponse.json();
             const htmlContent = data.contents;
-            const status = analyzeDownDetectorData(htmlContent, 'brawl-stars');
-            updateBrawlStarsUI(status);
-        } else {
-            throw new Error('Network response not ok');
+            
+            // Check for maintenance indicators in Supercell status
+            const maintenanceStatus = checkSupercellMaintenance(htmlContent);
+            if (maintenanceStatus.isMaintenance) {
+                updateBrawlStarsUI({
+                    status: 'maintenance',
+                    message: maintenanceStatus.message || 'Scheduled maintenance in progress',
+                    problemLevel: 'high',
+                    reports: 'Maintenance',
+                    updated: new Date().toLocaleString()
+                });
+                return;
+            }
         }
     } catch (error) {
-        console.log('Brawl Stars fetch failed:', error);
-        // Fallback for Brawl Stars
-        updateBrawlStarsUI({
+        console.log('Supercell status check failed:', error);
+    }
+    
+    // Then check DownDetector for outage reports
+    try {
+        const downDetectorResponse = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://downdetector.co.uk/status/brawl-stars/')}`);
+        
+        if (downDetectorResponse.ok) {
+            const data = await downDetectorResponse.json();
+            const htmlContent = data.contents;
+            
+            // Enhanced analysis for Brawl Stars specifically
+            const status = analyzeBrawlStarsData(htmlContent);
+            updateBrawlStarsUI(status);
+            return;
+        }
+    } catch (error) {
+        console.log('DownDetector failed:', error);
+    }
+    
+    // Check Twitter/community for maintenance news (simulated)
+    const maintenanceStatus = checkCommunityMaintenance();
+    if (maintenanceStatus) {
+        updateBrawlStarsUI(maintenanceStatus);
+        return;
+    }
+    
+    // Ultimate fallback
+    updateBrawlStarsUI({
+        status: 'online',
+        message: 'Servers typically stable',
+        problemLevel: 'low',
+        reports: 'Minimal',
+        updated: new Date().toLocaleString()
+    });
+}
+
+// Check Supercell status page for maintenance indicators
+function checkSupercellMaintenance(html) {
+    const lowerHtml = html.toLowerCase();
+    
+    // Look for maintenance indicators
+    if (lowerHtml.includes('maintenance') || 
+        lowerHtml.includes('update in progress') || 
+        lowerHtml.includes('scheduled maintenance') ||
+        lowerHtml.includes('under maintenance')) {
+        return {
+            isMaintenance: true,
+            message: 'Scheduled maintenance in progress'
+        };
+    }
+    
+    // Look for Brawl Stars specific issues
+    if (lowerHtml.includes('brawl stars') && 
+        (lowerHtml.includes('incident') || lowerHtml.includes('outage'))) {
+        return {
+            isMaintenance: true,
+            message: 'Service interruption - maintenance ongoing'
+        };
+    }
+    
+    return { isMaintenance: false };
+}
+
+// Enhanced Brawl Stars data analysis
+function analyzeBrawlStarsData(html) {
+    const lowerHtml = html.toLowerCase();
+    
+    // Check for maintenance keywords specific to Brawl Stars
+    if (lowerHtml.includes('maintenance') || 
+        lowerHtml.includes('update') || 
+        lowerHtml.includes('patch') ||
+        lowerHtml.includes('brawl stars maintenance')) {
+        return {
+            status: 'maintenance',
+            message: 'Scheduled maintenance break in progress',
+            problemLevel: 'high',
+            reports: 'Maintenance',
+            updated: new Date().toLocaleString()
+        };
+    }
+    
+    // Check outage levels
+    if (lowerHtml.includes('red') || lowerHtml.includes('major outage')) {
+        return {
+            status: 'offline',
+            message: 'Major outage - servers may be down',
+            problemLevel: 'critical',
+            reports: 'Very high',
+            updated: new Date().toLocaleString()
+        };
+    }
+    else if (lowerHtml.includes('orange') || lowerHtml.includes('elevated')) {
+        return {
+            status: 'issues',
+            message: 'Some users reporting issues',
+            problemLevel: 'medium',
+            reports: 'Elevated',
+            updated: new Date().toLocaleString()
+        };
+    }
+    else {
+        return {
             status: 'online',
-            message: 'Servers typically stable',
+            message: 'No problems detected',
             problemLevel: 'low',
             reports: 'Minimal',
             updated: new Date().toLocaleString()
-        });
+        };
     }
+}
+
+// Check community sources for maintenance news (simulated)
+function checkCommunityMaintenance() {
+    // This would normally check Twitter, Reddit, etc.
+    // For now, we'll use a simple time-based check
+    const now = new Date();
+    const day = now.getDay();
+    const hour = now.getHours();
+    
+    // Common maintenance times (Tuesday mornings, update days)
+    if ((day === 2 && hour >= 6 && hour <= 12) || // Tuesday 6AM-12PM
+        (day === 3 && hour >= 6 && hour <= 12)) { // Wednesday 6AM-12PM
+        return {
+            status: 'maintenance',
+            message: 'Possible scheduled maintenance (common update time)',
+            problemLevel: 'medium',
+            reports: 'Possible maintenance',
+            updated: new Date().toLocaleString()
+        };
+    }
+    
+    return null;
 }
 
 // Update Brawl Stars UI

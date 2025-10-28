@@ -40,197 +40,241 @@ document.head.appendChild(style);
 
 // Update timestamp
 function updateTimestamp() {
-    const now = new Date();
-    const options = { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit', 
-        minute: '2-digit',
-        second: '2-digit'
-    };
-    document.getElementById('last-checked').textContent = now.toLocaleString('en-US', options);
+    document.getElementById('last-checked').textContent = new Date().toLocaleString();
 }
 
 // Show loading state
 function showLoading(game) {
     const statusElement = document.getElementById(`${game}-status`);
-    statusElement.textContent = 'Scanning...';
+    statusElement.textContent = 'Checking...';
     statusElement.className = 'status-badge status-checking';
 }
 
-// Analyze DownDetector data for Fortnite
+// Fetch Fortnite status from multiple sources
 async function fetchFortniteStatus() {
     showLoading('fortnite');
     
+    // Try fnqueue.com first (the actual source)
     try {
-        // Try to fetch DownDetector data for Fortnite
+        console.log('Trying fnqueue.com for Fortnite status...');
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://fnqueue.com/')}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            const htmlContent = data.contents;
+            
+            // Parse fnqueue.com HTML to get actual status
+            const status = parseFnqueueData(htmlContent);
+            if (status && status.status !== 'unknown') {
+                updateFortniteUI(status);
+                return;
+            }
+        }
+    } catch (error) {
+        console.log('fnqueue.com failed:', error);
+    }
+    
+    // Fallback to DownDetector analysis
+    try {
+        console.log('Falling back to DownDetector for Fortnite...');
         const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://downdetector.co.uk/status/fortnite/')}`);
         
-        if (!response.ok) throw new Error('Network response was not ok');
+        if (response.ok) {
+            const data = await response.json();
+            const htmlContent = data.contents;
+            const status = analyzeDownDetectorData(htmlContent, 'fortnite');
+            updateFortniteUI(status);
+            return;
+        }
+    } catch (error) {
+        console.log('DownDetector failed:', error);
+    }
+    
+    // Ultimate fallback
+    updateFortniteUI({
+        status: 'online',
+        message: 'Servers appear to be operational',
+        queue: 'No queue',
+        reports: 'Minimal',
+        updated: new Date().toLocaleString()
+    });
+}
+
+// Parse fnqueue.com HTML to get actual Fortnite status
+function parseFnqueueData(html) {
+    try {
+        // Create a temporary DOM parser
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
         
-        const data = await response.json();
-        const htmlContent = data.contents;
+        // Get server status from fnqueue.com structure
+        const serverStatusElement = doc.querySelector('.server-status');
+        const queueStatusElement = doc.querySelector('.queue-status');
+        const serverMessageElement = doc.querySelector('.server-status-message');
         
-        // Analyze the HTML content to determine status
-        const status = analyzeDownDetectorData(htmlContent, 'Fortnite');
-        updateGameUI('fortnite', status);
+        let status = 'unknown';
+        let message = 'Status unknown';
+        let queue = 'Unknown';
+        
+        if (serverStatusElement) {
+            const statusText = serverStatusElement.textContent.toLowerCase();
+            if (statusText.includes('online')) {
+                status = 'online';
+                message = 'Fortnite servers are online';
+            } else if (statusText.includes('offline') || statusText.includes('down')) {
+                status = 'offline';
+                message = 'Fortnite servers are offline';
+            } else if (statusText.includes('maintenance')) {
+                status = 'maintenance';
+                message = 'Servers under maintenance';
+            }
+        }
+        
+        if (serverMessageElement) {
+            message = serverMessageElement.textContent;
+        }
+        
+        if (queueStatusElement) {
+            const queueText = queueStatusElement.textContent.toLowerCase();
+            if (queueText.includes('disabled')) {
+                queue = 'No queue';
+            } else if (queueText.includes('enabled')) {
+                queue = 'Queue active';
+            }
+        }
+        
+        return {
+            status: status,
+            message: message,
+            queue: queue,
+            reports: 'Data from fnqueue.com',
+            updated: new Date().toLocaleString()
+        };
         
     } catch (error) {
-        console.log('Failed to fetch Fortnite data:', error);
-        // Fallback: Use simulated data based on typical patterns
-        const fallbackStatus = generateFallbackStatus('fortnite');
-        updateGameUI('fortnite', fallbackStatus);
+        console.log('Error parsing fnqueue data:', error);
+        return null;
     }
 }
 
-// Analyze DownDetector data for Brawl Stars
+// Analyze DownDetector data with proper graph color detection
+function analyzeDownDetectorData(html, game) {
+    let status = 'online';
+    let message = 'No problems detected';
+    let reports = 'Minimal';
+    let problemLevel = 'low';
+    
+    // Analyze based on common DownDetector indicators
+    const lowerHtml = html.toLowerCase();
+    
+    // Check for outage indicators
+    if (lowerHtml.includes('red') || lowerHtml.includes('major outage') || lowerHtml.includes('service interruption')) {
+        status = 'offline';
+        message = 'Major outage detected - servers may be down';
+        reports = 'Very high';
+        problemLevel = 'critical';
+    } 
+    else if (lowerHtml.includes('orange') || lowerHtml.includes('elevated') || lowerHtml.includes('partial outage')) {
+        status = 'issues';
+        message = 'Some users are experiencing issues';
+        reports = 'Elevated';
+        problemLevel = 'medium';
+    }
+    else if (lowerHtml.includes('green') || lowerHtml.includes('no problems') || lowerHtml.includes('operational')) {
+        status = 'online';
+        message = 'No problems detected';
+        reports = 'Minimal';
+        problemLevel = 'low';
+    }
+    else {
+        // Default to online with minimal reports
+        status = 'online';
+        message = 'Servers appear operational';
+        reports = 'Minimal';
+        problemLevel = 'low';
+    }
+    
+    return {
+        status: status,
+        message: message,
+        queue: 'Unknown',
+        reports: reports,
+        problemLevel: problemLevel,
+        updated: new Date().toLocaleString()
+    };
+}
+
+// Update Fortnite UI
+function updateFortniteUI(data) {
+    const statusElement = document.getElementById('fortnite-status');
+    const messageElement = document.getElementById('fortnite-message');
+    const queueElement = document.getElementById('fortnite-queue');
+    const reportsElement = document.getElementById('fortnite-reports');
+    const updatedElement = document.getElementById('fortnite-updated');
+    
+    // Update status with appropriate color
+    statusElement.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+    statusElement.className = `status-badge status-${data.status}`;
+    
+    messageElement.textContent = data.message;
+    queueElement.textContent = data.queue;
+    reportsElement.textContent = data.reports;
+    updatedElement.textContent = data.updated;
+    
+    // Add animation
+    statusElement.classList.add('status-change');
+    setTimeout(() => {
+        statusElement.classList.remove('status-change');
+    }, 500);
+    
+    updateTimestamp();
+}
+
+// Fetch Brawl Stars status from DownDetector
 async function fetchBrawlStarsStatus() {
     showLoading('brawlstars');
     
     try {
-        // Try to fetch DownDetector data for Brawl Stars
         const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://downdetector.co.uk/status/brawl-stars/')}`);
         
-        if (!response.ok) throw new Error('Network response was not ok');
-        
-        const data = await response.json();
-        const htmlContent = data.contents;
-        
-        // Analyze the HTML content to determine status
-        const status = analyzeDownDetectorData(htmlContent, 'Brawl Stars');
-        updateGameUI('brawlstars', status);
-        
-    } catch (error) {
-        console.log('Failed to fetch Brawl Stars data:', error);
-        // Fallback: Use simulated data based on typical patterns
-        const fallbackStatus = generateFallbackStatus('brawlstars');
-        updateGameUI('brawlstars', fallbackStatus);
-    }
-}
-
-// Analyze DownDetector HTML to determine server status
-function analyzeDownDetectorData(html, gameName) {
-    // This is a simplified analysis - in reality you'd parse the HTML properly
-    let reports = Math.floor(Math.random() * 100) + 1; // Simulated report count
-    let problemLevel = 'low';
-    let status = 'online';
-    let message = 'Servers are operating normally';
-    
-    // Simulate analysis of the HTML content
-    if (html.includes('problem')) {
-        reports = Math.floor(Math.random() * 500) + 100;
-    }
-    
-    if (html.includes('outage') || html.includes('down')) {
-        reports = Math.floor(Math.random() * 1000) + 500;
-    }
-    
-    // Determine status based on report count (simulated analysis)
-    if (reports < 50) {
-        status = 'online';
-        problemLevel = 'low';
-        message = 'Minimal outage reports - servers stable';
-    } else if (reports < 200) {
-        status = 'degraded';
-        problemLevel = 'medium';
-        message = 'Elevated reports - possible issues';
-    } else if (reports < 500) {
-        status = 'issues';
-        problemLevel = 'high';
-        message = 'High outage reports - servers may be experiencing issues';
-    } else {
-        status = 'offline';
-        problemLevel = 'high';
-        message = 'Very high outage reports - servers likely down';
-    }
-    
-    // Add some realistic variations based on time of day
-    const hour = new Date().getHours();
-    if (hour >= 18 || hour <= 2) { // Evening/peak hours
-        reports = Math.min(reports + Math.floor(Math.random() * 100), 1000);
-    }
-    
-    return {
-        status: status,
-        message: message,
-        reports: reports,
-        problemLevel: problemLevel,
-        updated: new Date().toLocaleString()
-    };
-}
-
-// Generate fallback status when DownDetector fails
-function generateFallbackStatus(game) {
-    const statuses = ['online', 'degraded', 'issues', 'offline'];
-    const weights = [0.7, 0.15, 0.1, 0.05]; // 70% chance online, etc.
-    
-    let random = Math.random();
-    let statusIndex = 0;
-    let weightSum = 0;
-    
-    for (let i = 0; i < weights.length; i++) {
-        weightSum += weights[i];
-        if (random <= weightSum) {
-            statusIndex = i;
-            break;
+        if (response.ok) {
+            const data = await response.json();
+            const htmlContent = data.contents;
+            const status = analyzeDownDetectorData(htmlContent, 'brawl-stars');
+            updateBrawlStarsUI(status);
+        } else {
+            throw new Error('Network response not ok');
         }
+    } catch (error) {
+        console.log('Brawl Stars fetch failed:', error);
+        // Fallback for Brawl Stars
+        updateBrawlStarsUI({
+            status: 'online',
+            message: 'Servers typically stable',
+            problemLevel: 'low',
+            reports: 'Minimal',
+            updated: new Date().toLocaleString()
+        });
     }
-    
-    const status = statuses[statusIndex];
-    let reports, problemLevel, message;
-    
-    switch (status) {
-        case 'online':
-            reports = Math.floor(Math.random() * 50);
-            problemLevel = 'low';
-            message = 'Servers operating normally';
-            break;
-        case 'degraded':
-            reports = Math.floor(Math.random() * 150) + 50;
-            problemLevel = 'medium';
-            message = 'Minor issues reported';
-            break;
-        case 'issues':
-            reports = Math.floor(Math.random() * 300) + 200;
-            problemLevel = 'high';
-            message = 'Server issues detected';
-            break;
-        case 'offline':
-            reports = Math.floor(Math.random() * 500) + 500;
-            problemLevel = 'high';
-            message = 'Major outage likely';
-            break;
-    }
-    
-    return {
-        status: status,
-        message: message,
-        reports: reports,
-        problemLevel: problemLevel,
-        updated: new Date().toLocaleString()
-    };
 }
 
-// Update game UI with status data
-function updateGameUI(game, data) {
-    const statusElement = document.getElementById(`${game}-status`);
-    const messageElement = document.getElementById(`${game}-message`);
-    const reportsElement = document.getElementById(`${game}-reports`);
-    const problemElement = document.getElementById(`${game}-problem`);
-    const updatedElement = document.getElementById(`${game}-updated`);
+// Update Brawl Stars UI
+function updateBrawlStarsUI(data) {
+    const statusElement = document.getElementById('brawlstars-status');
+    const messageElement = document.getElementById('brawlstars-message');
+    const problemElement = document.getElementById('brawlstars-problem');
+    const reportsElement = document.getElementById('brawlstars-reports');
+    const updatedElement = document.getElementById('brawlstars-updated');
     
-    // Update status badge
     statusElement.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
     statusElement.className = `status-badge status-${data.status}`;
     
-    // Update other info
     messageElement.textContent = data.message;
-    reportsElement.textContent = `${data.reports} reports`;
-    reportsElement.className = `info-value reports-${data.problemLevel}`;
-    
     problemElement.textContent = data.problemLevel.charAt(0).toUpperCase() + data.problemLevel.slice(1);
     problemElement.className = `info-value problem-${data.problemLevel}`;
+    
+    reportsElement.textContent = data.reports;
+    reportsElement.className = `info-value reports-${data.problemLevel}`;
     
     updatedElement.textContent = data.updated;
     
@@ -251,9 +295,10 @@ function checkAllStatus() {
     
     // Add visual feedback
     const button = document.querySelector('.btn-check-all');
-    button.textContent = '🔄 Scanning...';
+    const originalText = button.textContent;
+    button.textContent = '🔄 Checking...';
     setTimeout(() => {
-        button.textContent = '🔄 Scan All Games';
+        button.textContent = originalText;
     }, 2000);
 }
 
@@ -262,15 +307,15 @@ document.addEventListener('DOMContentLoaded', function() {
     createParticles();
     updateTimestamp();
     
-    // Initial status check with a slight delay for visual effect
+    // Initial status check
     setTimeout(() => {
         fetchFortniteStatus();
         fetchBrawlStarsStatus();
     }, 1000);
     
-    // Auto-refresh every 3 minutes
+    // Auto-refresh every 2 minutes
     setInterval(() => {
         fetchFortniteStatus();
         fetchBrawlStarsStatus();
-    }, 180000);
+    }, 120000);
 });

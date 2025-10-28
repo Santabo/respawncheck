@@ -244,6 +244,108 @@ function parseFnqueueData(html) {
     }
 }
 
+// Fetch latest Fortnite tweet using a reliable method
+async function fetchFortniteTweet() {
+    try {
+        // Method 1: Try using a Twitter API proxy
+        console.log('Fetching Fortnite tweet...');
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://twitter.com/FortniteStatus')}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            const htmlContent = data.contents;
+            
+            // Parse the latest tweet from HTML
+            const tweet = parseLatestTweet(htmlContent);
+            if (tweet) {
+                displayFortniteTweet(tweet);
+                return;
+            }
+        }
+    } catch (error) {
+        console.log('Twitter fetch failed:', error);
+    }
+    
+    // Fallback: Show helpful information
+    displayFallbackTweet();
+}
+
+// Parse the latest tweet from Twitter HTML
+function parseLatestTweet(html) {
+    try {
+        // Simple regex to find tweet content
+        const tweetMatch = html.match(/data-testid="tweetText".*?>(.*?)<\/div>/);
+        const timeMatch = html.match(/datetime="([^"]*)"/);
+        
+        if (tweetMatch && tweetMatch[1]) {
+            // Clean up the tweet text
+            let tweetText = tweetMatch[1]
+                .replace(/<[^>]*>/g, '') // Remove HTML tags
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .trim();
+            
+            // Limit length
+            if (tweetText.length > 200) {
+                tweetText = tweetText.substring(0, 200) + '...';
+            }
+            
+            return {
+                text: tweetText,
+                time: timeMatch ? timeMatch[1] : new Date().toISOString(),
+                url: 'https://twitter.com/FortniteStatus'
+            };
+        }
+    } catch (error) {
+        console.log('Error parsing tweet:', error);
+    }
+    return null;
+}
+
+// Display fallback tweet when we can't fetch real tweets
+function displayFallbackTweet() {
+    const tweetContainer = document.getElementById('fortnite-tweet');
+    
+    const fallbackMessages = [
+        "Follow @FortniteStatus on Twitter for official server updates, maintenance schedules, and announcements.",
+        "Check @FortniteStatus for real-time server status updates and maintenance information.",
+        "For the latest Fortnite server news, follow the official @FortniteStatus Twitter account.",
+        "Server status is being monitored. Check @FortniteStatus for official announcements."
+    ];
+    
+    const randomMessage = fallbackMessages[Math.floor(Math.random() * fallbackMessages.length)];
+    const currentTime = new Date().toLocaleTimeString();
+    
+    tweetContainer.innerHTML = `
+        <div class="tweet-text">${randomMessage}</div>
+        <div class="tweet-meta">
+            <span class="tweet-time">Last checked: ${currentTime}</span>
+        </div>
+    `;
+}
+
+// Display Fortnite tweet in the UI
+function displayFortniteTweet(tweet) {
+    const tweetContainer = document.getElementById('fortnite-tweet');
+    const tweetText = tweet.text || 'No tweet content available';
+    const tweetTime = tweet.time ? new Date(tweet.time).toLocaleString() : new Date().toLocaleString();
+    
+    // Style mentions and hashtags
+    const styledText = tweetText
+        .replace(/@(\w+)/g, '<span class="tweet-mention">@$1</span>')
+        .replace(/#(\w+)/g, '<span class="tweet-hashtag">#$1</span>');
+    
+    tweetContainer.innerHTML = `
+        <div class="tweet-text">${styledText}</div>
+        <div class="tweet-meta">
+            <span class="tweet-time">${tweetTime}</span>
+        </div>
+    `;
+}
+
 // Update Fortnite UI
 function updateFortniteUI(data) {
     const statusElement = document.getElementById('fortnite-status');
@@ -458,6 +560,7 @@ function checkAllStatus() {
     updateTimestamp();
     fetchFortniteStatus();
     fetchBrawlStarsStatus();
+    fetchFortniteTweet();
     
     // Add visual feedback
     const button = document.querySelector('.btn-check-all');
@@ -480,11 +583,13 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         fetchFortniteStatus();
         fetchBrawlStarsStatus();
+        fetchFortniteTweet();
     }, 1000);
     
     // Auto-refresh every 5 minutes
     setInterval(() => {
         fetchFortniteStatus();
         fetchBrawlStarsStatus();
+        fetchFortniteTweet();
     }, 300000); // 5 minutes = 300,000 milliseconds
 });

@@ -1,31 +1,31 @@
 # RespawnCheck 🎮
 
-Accurate game server status tracker using real data sources.
+Real-time game server status tracker with official Twitter integration.
 
-## How It Works
-- **Fortnite**: Uses fnqueue.com's actual data + DownDetector graph analysis
-- **Brawl Stars**: Analyzes DownDetector outage reports and graph colors
+## Features
 
-## Status Determination
-### Fortnite:
-- **🟢 Online**: fnqueue.com shows online OR DownDetector green
-- **🟡 Issues**: DownDetector orange graph = "Some users experiencing issues"  
-- **🔴 Offline**: fnqueue.com shows offline OR DownDetector red graph
+- **Fortnite Status**: Real-time server status using fnqueue.com WebSocket + official @FortniteStatus Twitter feed
+- **Brawl Stars Status**: DownDetector analysis with intelligent maintenance detection
+- **Live Twitter Updates**: Embedded official tweets from @FortniteStatus
+- **Real-time Updates**: Automatic refresh every 5 minutes
+- **Responsive Design**: Works on all devices
+- **Beautiful UI**: Modern dark theme with animations
 
-### Brawl Stars:
-- **🟢 Online**: DownDetector green = "No problems"
-- **🟡 Issues**: DownDetector orange = "Some users experiencing issues"
-- **🔴 Offline**: DownDetector red = "Major outage"
+## Games Tracked
+
+- **Fortnite** (Epic Games) - Real-time WebSocket data + Twitter integration
+- **Brawl Stars** (Supercell) - DownDetector outage analysis
 
 ## Data Sources
-- **fnqueue.com** - Primary Fortnite source
-- **DownDetector UK** - Outage reports and graph analysis
-- **Real-time analysis** of server status indicators
+
+- **Fortnite**: fnqueue.com WebSocket + @FortniteStatus Twitter embed
+- **Brawl Stars**: DownDetector.com outage reports
+- **Real-time Updates**: Automatic status checking every 5 minutes
 
 ## Deployment
+
 1. Fork this repository
-2. Deploy to Vercel
+2. Deploy to Vercel by connecting your GitHub account
 3. Your site will be live at `respawncheck.vercel.app`
 
-## Note
-Unofficial project - uses public data sources for server status determination.
+## File Structure

@@ -120,19 +120,18 @@ main {
     height: 60px;
     border-radius: 15px;
     margin-right: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
-    background: rgba(255, 255, 255, 0.1);
 }
 
-.fortnite {
-    background: linear-gradient(135deg, #FA71CD, #C471F5);
-}
-
-.brawlstars {
-    background: linear-gradient(135deg, #FFD200, #FF7E5F);
+.game-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
 }
 
 .game-title {

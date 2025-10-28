@@ -1,1 +1,1 @@
-# gamestatus
+# respawncheck

@@ -47,6 +47,9 @@ let previousStatus = {
     }
 };
 
+// WebSocket connection for Fortnite
+let fortniteSocket = null;
+
 // Update timestamp
 function updateTimestamp() {
     document.getElementById('last-checked').textContent = new Date().toLocaleString();
@@ -59,13 +62,104 @@ function showLoading(game) {
     statusElement.className = 'status-badge status-checking';
 }
 
+// Initialize WebSocket connection for Fortnite
+function initFortniteWebSocket() {
+    try {
+        // Connect to fnqueue.com's WebSocket
+        fortniteSocket = io('https://fnqueue.com', {
+            transports: ['websocket'],
+            timeout: 5000
+        });
+
+        fortniteSocket.on('connect', () => {
+            console.log('Connected to Fortnite WebSocket');
+        });
+
+        fortniteSocket.on('status', (data) => {
+            console.log('Received Fortnite status from WebSocket:', data);
+            if (data && data.server) {
+                updateFortniteFromWebSocket(data);
+            }
+        });
+
+        fortniteSocket.on('disconnect', () => {
+            console.log('Disconnected from Fortnite WebSocket');
+            // Fallback to API calls
+            setTimeout(fetchFortniteStatus, 5000);
+        });
+
+        fortniteSocket.on('connect_error', (error) => {
+            console.log('WebSocket connection error:', error);
+            // Fallback to API calls
+            fetchFortniteStatus();
+        });
+
+    } catch (error) {
+        console.log('WebSocket initialization failed:', error);
+        fetchFortniteStatus();
+    }
+}
+
+// Update Fortnite status from WebSocket data
+function updateFortniteFromWebSocket(data) {
+    const serverData = data.server;
+    const queueData = data.queue;
+    
+    let status = 'unknown';
+    let message = 'Status unknown';
+    let queue = 'Unknown';
+    
+    if (serverData.current) {
+        if (serverData.current.isUp) {
+            status = 'online';
+            message = serverData.current.message || 'Fortnite servers are online';
+        } else {
+            status = 'offline';
+            message = serverData.current.message || 'Fortnite servers are offline';
+        }
+    }
+    
+    if (queueData.current) {
+        if (queueData.current.enabled) {
+            queue = 'Queue active';
+            if (queueData.current.time !== null) {
+                queue = `Queue: ${formatSeconds(queueData.current.time)}`;
+            }
+        } else {
+            queue = 'No queue';
+        }
+    }
+    
+    updateFortniteUI({
+        status: status,
+        message: message,
+        queue: queue,
+        reports: 'Live data',
+        updated: new Date().toLocaleString()
+    });
+}
+
+// Format seconds to HH:MM:SS
+function formatSeconds(seconds) {
+    return new Date(seconds * 1000)
+        .toISOString()
+        .slice(11, 19)
+        .replace(/^(00:)+/, '');
+}
+
 // Fetch Fortnite status from multiple sources
 async function fetchFortniteStatus() {
     showLoading('fortnite');
     
-    // Try fnqueue.com first (the actual source)
+    // Try WebSocket first if available
+    if (fortniteSocket && fortniteSocket.connected) {
+        console.log('Using WebSocket for Fortnite status');
+        return;
+    }
+    
+    // Fallback to API calls
     try {
-        console.log('Trying fnqueue.com for Fortnite status...');
+        console.log('Trying fnqueue.com API for Fortnite status...');
         const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://fnqueue.com/')}`);
         
         if (response.ok) {
@@ -80,23 +174,7 @@ async function fetchFortniteStatus() {
             }
         }
     } catch (error) {
-        console.log('fnqueue.com failed:', error);
-    }
-    
-    // Fallback to DownDetector analysis
-    try {
-        console.log('Falling back to DownDetector for Fortnite...');
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://downdetector.com/status/fortnite/')}`);
-        
-        if (response.ok) {
-            const data = await response.json();
-            const htmlContent = data.contents;
-            const status = analyzeDownDetectorData(htmlContent, 'fortnite');
-            updateFortniteUI(status);
-            return;
-        }
-    } catch (error) {
-        console.log('DownDetector failed:', error);
+        console.log('fnqueue.com API failed:', error);
     }
     
     // Ultimate fallback
@@ -166,51 +244,50 @@ function parseFnqueueData(html) {
     }
 }
 
-// Analyze DownDetector data with proper graph color detection
-function analyzeDownDetectorData(html, game) {
-    let status = 'online';
-    let message = 'No problems detected';
-    let reports = 'Minimal';
-    let problemLevel = 'low';
-    
-    // Analyze based on common DownDetector indicators
-    const lowerHtml = html.toLowerCase();
-    
-    // Check for outage indicators
-    if (lowerHtml.includes('red') || lowerHtml.includes('major outage') || lowerHtml.includes('service interruption')) {
-        status = 'offline';
-        message = 'Major outage detected - servers may be down';
-        reports = 'Very high';
-        problemLevel = 'critical';
-    } 
-    else if (lowerHtml.includes('orange') || lowerHtml.includes('elevated') || lowerHtml.includes('partial outage')) {
-        status = 'issues';
-        message = 'Some users are experiencing issues';
-        reports = 'Elevated';
-        problemLevel = 'medium';
+// Fetch latest tweet from FortniteStatus
+async function fetchFortniteTweet() {
+    try {
+        // Using a Twitter API proxy service
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://cdn.syndication.twimg.com/timeline/profile?screen_name=FortniteStatus&count=1')}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            const tweetData = JSON.parse(data.contents);
+            
+            if (tweetData && tweetData[0] && tweetData[0].content) {
+                const tweet = tweetData[0].content;
+                displayFortniteTweet(tweet);
+            }
+        }
+    } catch (error) {
+        console.log('Failed to fetch Fortnite tweet:', error);
+        // Fallback: Show error message
+        document.getElementById('fortnite-tweet').innerHTML = `
+            <div class="tweet-error">Unable to load latest tweet</div>
+        `;
     }
-    else if (lowerHtml.includes('green') || lowerHtml.includes('no problems') || lowerHtml.includes('operational')) {
-        status = 'online';
-        message = 'No problems detected';
-        reports = 'Minimal';
-        problemLevel = 'low';
-    }
-    else {
-        // Default to online with minimal reports
-        status = 'online';
-        message = 'Servers appear operational';
-        reports = 'Minimal';
-        problemLevel = 'low';
-    }
+}
+
+// Display Fortnite tweet in the UI
+function displayFortniteTweet(tweet) {
+    const tweetContainer = document.getElementById('fortnite-tweet');
+    const tweetText = tweet.tweet?.text || tweet.full_text || 'No tweet content available';
+    const tweetTime = tweet.tweet?.created_at || tweet.created_at;
     
-    return {
-        status: status,
-        message: message,
-        queue: 'Unknown',
-        reports: reports,
-        problemLevel: problemLevel,
-        updated: new Date().toLocaleString()
-    };
+    // Clean up tweet text (remove URLs, etc.)
+    const cleanText = tweetText
+        .replace(/(https?:\/\/[^\s]+)/g, '') // Remove URLs
+        .replace(/@(\w+)/g, '<span class="tweet-mention">@$1</span>') // Style mentions
+        .replace(/#(\w+)/g, '<span class="tweet-hashtag">#$1</span>'); // Style hashtags
+    
+    const formattedTime = tweetTime ? new Date(tweetTime).toLocaleString() : 'Unknown time';
+    
+    tweetContainer.innerHTML = `
+        <div class="tweet-text">${cleanText}</div>
+        <div class="tweet-meta">
+            <span class="tweet-time">${formattedTime}</span>
+        </div>
+    `;
 }
 
 // Update Fortnite UI
@@ -427,6 +504,7 @@ function checkAllStatus() {
     updateTimestamp();
     fetchFortniteStatus();
     fetchBrawlStarsStatus();
+    fetchFortniteTweet();
     
     // Add visual feedback
     const button = document.querySelector('.btn-check-all');
@@ -442,15 +520,25 @@ document.addEventListener('DOMContentLoaded', function() {
     createParticles();
     updateTimestamp();
     
+    // Initialize WebSocket for Fortnite
+    initFortniteWebSocket();
+    
     // Initial status check
     setTimeout(() => {
         fetchFortniteStatus();
         fetchBrawlStarsStatus();
+        fetchFortniteTweet();
     }, 1000);
     
     // Auto-refresh every 5 minutes
     setInterval(() => {
         fetchFortniteStatus();
         fetchBrawlStarsStatus();
+        fetchFortniteTweet();
     }, 300000); // 5 minutes = 300,000 milliseconds
+    
+    // Refresh tweets every 2 minutes
+    setInterval(() => {
+        fetchFortniteTweet();
+    }, 120000);
 });

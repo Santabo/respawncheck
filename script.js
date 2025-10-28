@@ -244,41 +244,75 @@ function parseFnqueueData(html) {
     }
 }
 
-// Fetch latest Fortnite tweet using a reliable method
+// Fetch latest Fortnite tweet using a more reliable method
 async function fetchFortniteTweet() {
     try {
-        // Method 1: Try using a Twitter API proxy
-        console.log('Fetching Fortnite tweet...');
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://twitter.com/FortniteStatus')}`);
+        // Use a Twitter API proxy that gets the latest tweets (not pinned)
+        console.log('Fetching latest Fortnite tweet...');
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://cdn.syndication.twimg.com/timeline/profile?screen_name=FortniteStatus&count=5')}`);
         
         if (response.ok) {
             const data = await response.json();
-            const htmlContent = data.contents;
+            const timelineData = JSON.parse(data.contents);
             
-            // Parse the latest tweet from HTML
-            const tweet = parseLatestTweet(htmlContent);
+            if (timelineData && timelineData[0] && timelineData[0].content) {
+                // Get the first (latest) tweet that's not a retweet or pinned
+                const latestTweet = findLatestNonPinnedTweet(timelineData);
+                if (latestTweet) {
+                    displayFortniteTweet(latestTweet);
+                    return;
+                }
+            }
+        }
+    } catch (error) {
+        console.log('Twitter API failed:', error);
+    }
+    
+    // Fallback: Try direct HTML parsing
+    try {
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://twitter.com/FortniteStatus')}`);
+        if (response.ok) {
+            const data = await response.json();
+            const htmlContent = data.contents;
+            const tweet = parseLatestTweetFromHTML(htmlContent);
             if (tweet) {
                 displayFortniteTweet(tweet);
                 return;
             }
         }
     } catch (error) {
-        console.log('Twitter fetch failed:', error);
+        console.log('HTML parsing failed:', error);
     }
     
-    // Fallback: Show helpful information
+    // Ultimate fallback
     displayFallbackTweet();
 }
 
-// Parse the latest tweet from Twitter HTML
-function parseLatestTweet(html) {
+// Find the latest non-pinned tweet from timeline data
+function findLatestNonPinnedTweet(timelineData) {
+    for (let i = 0; i < Math.min(timelineData.length, 5); i++) {
+        const item = timelineData[i];
+        if (item.content && item.content.tweet) {
+            const tweet = item.content.tweet;
+            // Skip retweets and check if it's not pinned (we can't easily detect pinned, but take the first few)
+            if (!tweet.text.startsWith('RT @')) {
+                return {
+                    text: tweet.text,
+                    time: tweet.created_at,
+                    url: `https://twitter.com/FortniteStatus/status/${tweet.id}`
+                };
+            }
+        }
+    }
+    return null;
+}
+
+// Parse the latest tweet from Twitter HTML (more robust method)
+function parseLatestTweetFromHTML(html) {
     try {
-        // Simple regex to find tweet content
-        const tweetMatch = html.match(/data-testid="tweetText".*?>(.*?)<\/div>/);
-        const timeMatch = html.match(/datetime="([^"]*)"/);
-        
+        // Look for tweet text in the HTML structure
+        const tweetMatch = html.match(/<div[^>]*data-testid="tweetText"[^>]*>(.*?)<\/div>/);
         if (tweetMatch && tweetMatch[1]) {
-            // Clean up the tweet text
             let tweetText = tweetMatch[1]
                 .replace(/<[^>]*>/g, '') // Remove HTML tags
                 .replace(/&amp;/g, '&')
@@ -288,19 +322,19 @@ function parseLatestTweet(html) {
                 .replace(/&#39;/g, "'")
                 .trim();
             
-            // Limit length
+            // Limit length and clean up
             if (tweetText.length > 200) {
                 tweetText = tweetText.substring(0, 200) + '...';
             }
             
             return {
                 text: tweetText,
-                time: timeMatch ? timeMatch[1] : new Date().toISOString(),
+                time: new Date().toISOString(),
                 url: 'https://twitter.com/FortniteStatus'
             };
         }
     } catch (error) {
-        console.log('Error parsing tweet:', error);
+        console.log('Error parsing tweet from HTML:', error);
     }
     return null;
 }
@@ -310,10 +344,10 @@ function displayFallbackTweet() {
     const tweetContainer = document.getElementById('fortnite-tweet');
     
     const fallbackMessages = [
-        "Follow @FortniteStatus on Twitter for official server updates, maintenance schedules, and announcements.",
-        "Check @FortniteStatus for real-time server status updates and maintenance information.",
-        "For the latest Fortnite server news, follow the official @FortniteStatus Twitter account.",
-        "Server status is being monitored. Check @FortniteStatus for official announcements."
+        "Follow @FortniteStatus for official server updates and maintenance announcements.",
+        "Check @FortniteStatus on Twitter for the latest server status and news.",
+        "For real-time Fortnite server updates, follow the official @FortniteStatus account.",
+        "Server status is being monitored. @FortniteStatus posts official updates."
     ];
     
     const randomMessage = fallbackMessages[Math.floor(Math.random() * fallbackMessages.length)];
@@ -330,16 +364,22 @@ function displayFallbackTweet() {
 // Display Fortnite tweet in the UI
 function displayFortniteTweet(tweet) {
     const tweetContainer = document.getElementById('fortnite-tweet');
-    const tweetText = tweet.text || 'No tweet content available';
+    let tweetText = tweet.text || 'No tweet content available';
     const tweetTime = tweet.time ? new Date(tweet.time).toLocaleString() : new Date().toLocaleString();
     
-    // Style mentions and hashtags
-    const styledText = tweetText
+    // Clean and style the tweet text
+    tweetText = tweetText
+        .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
         .replace(/@(\w+)/g, '<span class="tweet-mention">@$1</span>')
         .replace(/#(\w+)/g, '<span class="tweet-hashtag">#$1</span>');
     
+    // Limit length if needed
+    if (tweetText.length > 250) {
+        tweetText = tweetText.substring(0, 250) + '...';
+    }
+    
     tweetContainer.innerHTML = `
-        <div class="tweet-text">${styledText}</div>
+        <div class="tweet-text">${tweetText}</div>
         <div class="tweet-meta">
             <span class="tweet-time">${tweetTime}</span>
         </div>
@@ -372,98 +412,150 @@ function updateFortniteUI(data) {
     updateTimestamp();
 }
 
-// Fetch Brawl Stars status - improved maintenance detection
+// Fetch Brawl Stars status - FIXED maintenance detection
 async function fetchBrawlStarsStatus() {
     showLoading('brawlstars');
     
+    // Use multiple sources for more accurate status
+    const sources = [
+        checkSupercellStatus,
+        checkDownDetectorBrawlStars
+    ];
+    
+    for (const source of sources) {
+        try {
+            const status = await source();
+            if (status && status.status !== 'unknown') {
+                // Only show maintenance if explicitly confirmed
+                if (status.status === 'maintenance') {
+                    // Double-check with previous status to avoid false positives
+                    if (previousStatus.brawlstars.status !== 'maintenance') {
+                        console.log('Potential false maintenance detected, verifying...');
+                        continue; // Try next source
+                    }
+                }
+                updateBrawlStarsUI(status);
+                return;
+            }
+        } catch (error) {
+            console.log(`Source failed:`, error);
+        }
+    }
+    
+    // Default to online if no issues detected from any source
+    updateBrawlStarsUI({
+        status: 'online',
+        message: 'Servers operational',
+        problemLevel: 'low',
+        reports: 'Minimal',
+        updated: new Date().toLocaleString()
+    });
+}
+
+// Check Supercell status page first (most reliable)
+async function checkSupercellStatus() {
     try {
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://downdetector.com/status/brawl-stars/')}`);
-        
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://status.supercell.com/')}`);
         if (response.ok) {
             const data = await response.json();
             const htmlContent = data.contents;
-            
-            // Enhanced analysis with report tracking
-            const status = analyzeBrawlStarsWithHistory(htmlContent);
-            updateBrawlStarsUI(status);
-            return;
+            return parseSupercellStatus(htmlContent);
+        }
+    } catch (error) {
+        console.log('Supercell status check failed:', error);
+    }
+    return null;
+}
+
+// Parse Supercell status page
+function parseSupercellStatus(html) {
+    const lowerHtml = html.toLowerCase();
+    
+    // Look for Brawl Stars specific status
+    if (lowerHtml.includes('brawl stars')) {
+        if (lowerHtml.includes('all systems operational') || 
+            lowerHtml.includes('operational') ||
+            lowerHtml.includes('no issues')) {
+            return {
+                status: 'online',
+                message: 'All systems operational',
+                problemLevel: 'low',
+                reports: 'Normal',
+                updated: new Date().toLocaleString()
+            };
+        } else if (lowerHtml.includes('maintenance') || lowerHtml.includes('under maintenance')) {
+            return {
+                status: 'maintenance',
+                message: 'Official maintenance in progress',
+                problemLevel: 'high',
+                reports: 'Maintenance',
+                updated: new Date().toLocaleString()
+            };
+        } else if (lowerHtml.includes('issues') || lowerHtml.includes('degraded')) {
+            return {
+                status: 'issues',
+                message: 'Service degradation reported',
+                problemLevel: 'medium',
+                reports: 'Elevated',
+                updated: new Date().toLocaleString()
+            };
+        }
+    }
+    
+    return null;
+}
+
+// Check DownDetector as secondary source
+async function checkDownDetectorBrawlStars() {
+    try {
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://downdetector.com/status/brawl-stars/')}`);
+        if (response.ok) {
+            const data = await response.json();
+            const htmlContent = data.contents;
+            return analyzeBrawlStarsDownDetector(htmlContent);
         }
     } catch (error) {
         console.log('DownDetector failed:', error);
     }
-    
-    // Fallback - check if we have recent maintenance data
-    const now = new Date();
-    const lastMaintenance = previousStatus.brawlstars.timestamp;
-    
-    // If maintenance ended less than 30 minutes ago, be cautious
-    if (lastMaintenance && (now - lastMaintenance) < 30 * 60 * 1000) {
-        updateBrawlStarsUI({
-            status: 'online',
-            message: 'Servers coming online after maintenance',
-            problemLevel: 'low',
-            reports: 'Recovering',
-            updated: new Date().toLocaleString()
-        });
-    } else {
-        // Assume online if no issues detected
-        updateBrawlStarsUI({
-            status: 'online',
-            message: 'Servers operational',
-            problemLevel: 'low',
-            reports: 'Minimal',
-            updated: new Date().toLocaleString()
-        });
-    }
+    return null;
 }
 
-// Enhanced Brawl Stars analysis with history tracking
-function analyzeBrawlStarsWithHistory(html) {
+// Enhanced Brawl Stars DownDetector analysis - FIXED false positives
+function analyzeBrawlStarsDownDetector(html) {
     const lowerHtml = html.toLowerCase();
-    const currentReports = estimateReportCount(lowerHtml);
     const now = new Date();
     
-    // Check for explicit maintenance indicators
-    if (lowerHtml.includes('maintenance') || lowerHtml.includes('scheduled maintenance')) {
-        previousStatus.brawlstars = {
-            status: 'maintenance',
-            reports: currentReports,
-            timestamp: now
-        };
-        
-        return {
-            status: 'maintenance',
-            message: 'Scheduled maintenance in progress',
-            problemLevel: 'high',
-            reports: 'Maintenance',
-            updated: now.toLocaleString()
-        };
+    // Only report maintenance if explicitly mentioned and recent
+    if (lowerHtml.includes('maintenance') && lowerHtml.includes('brawl stars')) {
+        // Check if it's a current maintenance (not historical)
+        const maintenanceTimeMatch = lowerHtml.match(/(\d+)\s*(minute|hour|day)s?\s*ago/);
+        if (!maintenanceTimeMatch || 
+            (maintenanceTimeMatch[2] === 'minute' && parseInt(maintenanceTimeMatch[1]) < 120) ||
+            (maintenanceTimeMatch[2] === 'hour' && parseInt(maintenanceTimeMatch[1]) < 4)) {
+            
+            previousStatus.brawlstars = {
+                status: 'maintenance',
+                reports: 400,
+                timestamp: now
+            };
+            
+            return {
+                status: 'maintenance',
+                message: 'Maintenance reported',
+                problemLevel: 'high',
+                reports: 'Maintenance',
+                updated: now.toLocaleString()
+            };
+        }
     }
     
-    // Check if reports dropped significantly after maintenance
-    const previous = previousStatus.brawlstars;
-    if (previous.status === 'maintenance' && currentReports < 50) {
-        // Maintenance likely ended - reports dropped significantly
-        previousStatus.brawlstars = {
-            status: 'online',
-            reports: currentReports,
-            timestamp: now
-        };
-        
-        return {
-            status: 'online',
-            message: 'Maintenance completed - servers back online',
-            problemLevel: 'low',
-            reports: 'Recovering',
-            updated: now.toLocaleString()
-        };
-    }
+    // Check for current outage reports (more conservative)
+    const reports = estimateReportCount(lowerHtml);
     
-    // Standard outage detection
-    if (lowerHtml.includes('red') && currentReports > 500) {
+    if (reports > 800 && lowerHtml.includes('red')) {
         previousStatus.brawlstars = {
             status: 'offline',
-            reports: currentReports,
+            reports: reports,
             timestamp: now
         };
         
@@ -474,11 +566,10 @@ function analyzeBrawlStarsWithHistory(html) {
             reports: 'Very high',
             updated: now.toLocaleString()
         };
-    }
-    else if (lowerHtml.includes('orange') || currentReports > 200) {
+    } else if (reports > 300 || lowerHtml.includes('orange')) {
         previousStatus.brawlstars = {
             status: 'issues',
-            reports: currentReports,
+            reports: reports,
             timestamp: now
         };
         
@@ -489,18 +580,17 @@ function analyzeBrawlStarsWithHistory(html) {
             reports: 'Elevated',
             updated: now.toLocaleString()
         };
-    }
-    else {
-        // Normal operation
+    } else {
+        // Default to online - Brawl Stars servers are typically stable
         previousStatus.brawlstars = {
             status: 'online',
-            reports: currentReports,
+            reports: reports,
             timestamp: now
         };
         
         return {
             status: 'online',
-            message: 'No problems detected - servers online',
+            message: 'No problems detected',
             problemLevel: 'low',
             reports: 'Minimal',
             updated: now.toLocaleString()
@@ -510,7 +600,7 @@ function analyzeBrawlStarsWithHistory(html) {
 
 // Estimate report count from DownDetector page
 function estimateReportCount(html) {
-    // Simple estimation based on keywords and patterns
+    // More conservative estimation
     let reports = 0;
     
     if (html.includes('major outage') || html.includes('service interruption')) {

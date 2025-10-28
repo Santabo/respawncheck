@@ -5,14 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RespawnCheck - Game Server Status</title>
     <meta name="description" content="Check if Fortnite and Brawl Stars servers are currently online or if there are queues">
-    <meta property="og:title" content="RespawnCheck | Game Server Status">
-    <meta property="og:description" content="Check if Fortnite and Brawl Stars servers are currently online or if there are queues">
-    <meta property="og:site_name" content="RespawnCheck">
-    <meta property="og:type" content="website">
-    <meta name="theme-color" content="#FF6B6B">
-    <meta name="twitter:title" content="RespawnCheck | Game Server Status">
-    <meta name="twitter:description" content="Check if Fortnite and Brawl Stars servers are currently online or if there are queues">
-    <meta name="twitter:card" content="summary">
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
 </head>
@@ -24,7 +16,7 @@
     <main>
         <div class="header">
             <h1 class="title">🎮 RespawnCheck</h1>
-            <p class="subtitle">Are the servers cooked or popping off?</p>
+            <p class="subtitle">Live game server status - no guessing</p>
         </div>
         
         <div class="games-grid">
@@ -40,37 +32,30 @@
                 
                 <div class="status-container">
                     <span id="fortnite-status" class="status-badge status-checking">Checking...</span>
-                    <div class="status-dots">
-                        <span class="dot"></span>
-                        <span class="dot"></span>
-                        <span class="dot"></span>
-                    </div>
                 </div>
-                
-                <div id="fortnite-error" class="error" style="display: none;"></div>
                 
                 <div class="info-grid">
                     <div class="info-item">
-                        <span class="info-label">Status:</span>
-                        <span id="fortnite-message" class="info-value">Scanning servers...</span>
+                        <span class="info-label">Server Status:</span>
+                        <span id="fortnite-server-status" class="info-value">-</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Queue:</span>
-                        <span id="fortnite-queue" class="info-value">-</span>
+                        <span class="info-label">Queue Status:</span>
+                        <span id="fortnite-queue-status" class="info-value">-</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Updated:</span>
+                        <span class="info-label">Message:</span>
+                        <span id="fortnite-message" class="info-value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Last Updated:</span>
                         <span id="fortnite-updated" class="info-value">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Source:</span>
-                        <span id="fortnite-source" class="info-value">-</span>
                     </div>
                 </div>
                 
                 <div class="action-buttons">
                     <button class="btn-refresh" onclick="fetchFortniteStatus()">
-                        <span>🔄 Rescan</span>
+                        <span>🔄 Refresh</span>
                     </button>
                 </div>
             </div>
@@ -87,37 +72,26 @@
                 
                 <div class="status-container">
                     <span id="brawlstars-status" class="status-badge status-checking">Checking...</span>
-                    <div class="status-dots">
-                        <span class="dot"></span>
-                        <span class="dot"></span>
-                        <span class="dot"></span>
-                    </div>
                 </div>
-                
-                <div id="brawlstars-error" class="error" style="display: none;"></div>
                 
                 <div class="info-grid">
                     <div class="info-item">
                         <span class="info-label">Status:</span>
-                        <span id="brawlstars-message" class="info-value">Scanning servers...</span>
+                        <span id="brawlstars-message" class="info-value">Checking...</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Region:</span>
-                        <span id="brawlstars-region" class="info-value">Global</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Updated:</span>
+                        <span class="info-label">Last Checked:</span>
                         <span id="brawlstars-updated" class="info-value">-</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Source:</span>
-                        <span id="brawlstars-source" class="info-value">-</span>
+                        <span class="info-label">Note:</span>
+                        <span class="info-value">Using fallback data</span>
                     </div>
                 </div>
                 
                 <div class="action-buttons">
                     <button class="btn-refresh" onclick="fetchBrawlStarsStatus()">
-                        <span>🔄 Rescan</span>
+                        <span>🔄 Refresh</span>
                     </button>
                 </div>
             </div>
@@ -125,18 +99,12 @@
         
         <div class="status-footer">
             <div class="last-checked">
-                <span>Last respawn check: </span>
+                <span>Last update: </span>
                 <strong id="last-checked">-</strong>
             </div>
             <div class="note">
-                <small>🔍 Unofficial status tracker • Not affiliated with Epic Games or Supercell</small>
+                <small>Unofficial status tracker • Data from multiple sources</small>
             </div>
-        </div>
-        
-        <div class="global-controls">
-            <button class="btn-check-all" onclick="checkAllStatus()">
-                🔄 Check All Games
-            </button>
         </div>
     </main>
 

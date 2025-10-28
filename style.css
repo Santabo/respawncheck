@@ -17,6 +17,7 @@
     --warning: #FF9800;
     --error: #F44336;
     --info: #2196F3;
+    --twitter-blue: #1DA1F2;
 }
 
 body {
@@ -83,7 +84,7 @@ main {
 
 .games-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 2rem;
     margin-bottom: 2rem;
     flex: 1;
@@ -212,32 +213,6 @@ main {
     background: linear-gradient(135deg, #FFC107, #FF8F00);
 }
 
-.status-dots {
-    display: flex;
-    gap: 5px;
-}
-
-.dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--gray);
-    animation: pulse 1.5s infinite ease-in-out;
-}
-
-.dot:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.dot:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 0.4; transform: scale(0.8); }
-    50% { opacity: 1; transform: scale(1.2); }
-}
-
 .info-grid {
     display: flex;
     flex-direction: column;
@@ -291,6 +266,93 @@ main {
 
 .reports-high {
     color: var(--error);
+}
+
+/* Tweet Section Styles */
+.tweet-section {
+    margin: 1.5rem 0;
+    padding: 1.2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tweet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tweet-title {
+    font-weight: bold;
+    color: var(--light);
+    font-size: 0.9rem;
+}
+
+.tweet-source {
+    color: var(--twitter-blue);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.tweet-content {
+    color: var(--light);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    min-height: 40px;
+}
+
+.tweet-text {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.tweet-meta {
+    display: flex;
+    justify-content: space-between;
+    color: var(--gray);
+    font-size: 0.75rem;
+    margin-top: 0.8rem;
+}
+
+.tweet-time {
+    color: var(--gray);
+}
+
+.tweet-link {
+    color: var(--twitter-blue);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.tweet-link:hover {
+    color: #1a91da;
+}
+
+.tweet-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tweet-loading {
+    color: var(--gray);
+    font-style: italic;
+    text-align: center;
+    padding: 1rem;
+}
+
+.tweet-error {
+    color: var(--error);
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.9rem;
 }
 
 .action-buttons {
@@ -368,6 +430,7 @@ main {
     
     .games-grid {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
     
     main {
@@ -376,6 +439,16 @@ main {
     
     .game-card {
         padding: 1.2rem;
+    }
+    
+    .tweet-section {
+        padding: 1rem;
+    }
+    
+    .tweet-header {
+        flex-direction: column;
+        gap: 0.3rem;
+        align-items: flex-start;
     }
 }
 

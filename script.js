@@ -244,50 +244,156 @@ function parseFnqueueData(html) {
     }
 }
 
-// Fetch latest tweet from FortniteStatus
+// Fetch latest tweet from FortniteStatus using alternative method
 async function fetchFortniteTweet() {
     try {
-        // Using a Twitter API proxy service
-        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://cdn.syndication.twimg.com/timeline/profile?screen_name=FortniteStatus&count=1')}`);
+        // Method 1: Try using Twitter API proxy
+        console.log('Trying Twitter API proxy...');
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://twitter.com/FortniteStatus')}`);
         
         if (response.ok) {
             const data = await response.json();
-            const tweetData = JSON.parse(data.contents);
+            const htmlContent = data.contents;
             
-            if (tweetData && tweetData[0] && tweetData[0].content) {
-                const tweet = tweetData[0].content;
+            // Parse the HTML to find the latest tweet
+            const tweet = parseLatestTweetFromHTML(htmlContent);
+            if (tweet) {
                 displayFortniteTweet(tweet);
+                return;
             }
         }
     } catch (error) {
-        console.log('Failed to fetch Fortnite tweet:', error);
-        // Fallback: Show error message
-        document.getElementById('fortnite-tweet').innerHTML = `
-            <div class="tweet-error">Unable to load latest tweet</div>
-        `;
+        console.log('Twitter API proxy failed:', error);
     }
+    
+    // Method 2: Try RSS feed alternative
+    try {
+        console.log('Trying RSS alternative...');
+        const rssResponse = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://nitter.net/FortniteStatus/rss')}`);
+        
+        if (rssResponse.ok) {
+            const rssData = await rssResponse.json();
+            const rssContent = rssData.contents;
+            const tweet = parseTweetFromRSS(rssContent);
+            if (tweet) {
+                displayFortniteTweet(tweet);
+                return;
+            }
+        }
+    } catch (error) {
+        console.log('RSS alternative failed:', error);
+    }
+    
+    // Method 3: Use a simple status message based on server status
+    displayFallbackTweet();
+}
+
+// Parse latest tweet from Twitter HTML
+function parseLatestTweetFromHTML(html) {
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Look for tweet elements in the HTML
+        const tweetElements = doc.querySelectorAll('[data-testid="tweet"]');
+        if (tweetElements.length > 0) {
+            const latestTweet = tweetElements[0];
+            const tweetText = latestTweet.querySelector('[data-testid="tweetText"]');
+            const timeElement = latestTweet.querySelector('time');
+            
+            if (tweetText && timeElement) {
+                return {
+                    text: tweetText.textContent.trim(),
+                    time: timeElement.getAttribute('datetime'),
+                    url: `https://twitter.com/FortniteStatus/status/${latestTweet.getAttribute('data-tweet-id')}`
+                };
+            }
+        }
+    } catch (error) {
+        console.log('Error parsing tweet from HTML:', error);
+    }
+    return null;
+}
+
+// Parse tweet from RSS feed
+function parseTweetFromRSS(rssContent) {
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(rssContent, 'text/xml');
+        const items = doc.querySelectorAll('item');
+        
+        if (items.length > 0) {
+            const latestItem = items[0];
+            const title = latestItem.querySelector('title');
+            const description = latestItem.querySelector('description');
+            const pubDate = latestItem.querySelector('pubDate');
+            const link = latestItem.querySelector('link');
+            
+            if (title && description) {
+                return {
+                    text: description.textContent || title.textContent,
+                    time: pubDate ? pubDate.textContent : new Date().toISOString(),
+                    url: link ? link.textContent : 'https://twitter.com/FortniteStatus'
+                };
+            }
+        }
+    } catch (error) {
+        console.log('Error parsing RSS:', error);
+    }
+    return null;
+}
+
+// Display fallback tweet when we can't fetch real tweets
+function displayFallbackTweet() {
+    const tweetContainer = document.getElementById('fortnite-tweet');
+    
+    // Create a helpful fallback message
+    const fallbackMessages = [
+        "Follow @FortniteStatus for official server updates and announcements.",
+        "Check @FortniteStatus on Twitter for maintenance schedules and server status.",
+        "For real-time updates, visit the official FortniteStatus Twitter account.",
+        "Server status is being monitored. Follow @FortniteStatus for official news."
+    ];
+    
+    const randomMessage = fallbackMessages[Math.floor(Math.random() * fallbackMessages.length)];
+    
+    tweetContainer.innerHTML = `
+        <div class="tweet-text">${randomMessage}</div>
+        <div class="tweet-meta">
+            <span class="tweet-time">Last checked: ${new Date().toLocaleTimeString()}</span>
+        </div>
+    `;
 }
 
 // Display Fortnite tweet in the UI
 function displayFortniteTweet(tweet) {
     const tweetContainer = document.getElementById('fortnite-tweet');
-    const tweetText = tweet.tweet?.text || tweet.full_text || 'No tweet content available';
-    const tweetTime = tweet.tweet?.created_at || tweet.created_at;
+    const tweetText = tweet.text || 'No tweet content available';
+    const tweetTime = tweet.time ? new Date(tweet.time).toLocaleString() : new Date().toLocaleString();
     
-    // Clean up tweet text (remove URLs, etc.)
+    // Clean up tweet text (remove HTML entities, truncate if too long)
     const cleanText = tweetText
-        .replace(/(https?:\/\/[^\s]+)/g, '') // Remove URLs
-        .replace(/@(\w+)/g, '<span class="tweet-mention">@$1</span>') // Style mentions
-        .replace(/#(\w+)/g, '<span class="tweet-hashtag">#$1</span>'); // Style hashtags
-    
-    const formattedTime = tweetTime ? new Date(tweetTime).toLocaleString() : 'Unknown time';
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .substring(0, 200); // Limit length
     
     tweetContainer.innerHTML = `
-        <div class="tweet-text">${cleanText}</div>
+        <div class="tweet-text">${cleanText}${tweetText.length > 200 ? '...' : ''}</div>
         <div class="tweet-meta">
-            <span class="tweet-time">${formattedTime}</span>
+            <span class="tweet-time">${tweetTime}</span>
         </div>
     `;
+    
+    // Update the tweet link if we have a specific tweet URL
+    if (tweet.url && tweet.url !== 'https://twitter.com/FortniteStatus') {
+        const tweetLink = tweetContainer.parentElement.querySelector('.tweet-link');
+        if (tweetLink) {
+            tweetLink.href = tweet.url;
+        }
+    }
 }
 
 // Update Fortnite UI

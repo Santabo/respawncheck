@@ -16,7 +16,7 @@
     <main>
         <div class="header">
             <h1 class="title">🎮 RespawnCheck</h1>
-            <p class="subtitle">Real server status from outage reports</p>
+            <p class="subtitle">Real server status from multiple sources</p>
         </div>
         
         <div class="games-grid">
@@ -37,15 +37,15 @@
                 <div class="info-grid">
                     <div class="info-item">
                         <span class="info-label">Status:</span>
-                        <span id="fortnite-message" class="info-value">Analyzing reports...</span>
+                        <span id="fortnite-message" class="info-value">Checking multiple sources...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Queue Status:</span>
+                        <span id="fortnite-queue" class="info-value">-</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Outage Reports:</span>
                         <span id="fortnite-reports" class="info-value">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Problem Level:</span>
-                        <span id="fortnite-problem" class="info-value">-</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Last Updated:</span>
@@ -55,7 +55,7 @@
                 
                 <div class="action-buttons">
                     <button class="btn-refresh" onclick="fetchFortniteStatus()">
-                        <span>🔄 Rescan Reports</span>
+                        <span>🔄 Refresh</span>
                     </button>
                 </div>
             </div>
@@ -77,15 +77,15 @@
                 <div class="info-grid">
                     <div class="info-item">
                         <span class="info-label">Status:</span>
-                        <span id="brawlstars-message" class="info-value">Analyzing reports...</span>
+                        <span id="brawlstars-message" class="info-value">Checking reports...</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Outage Reports:</span>
-                        <span id="brawlstars-reports" class="info-value">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Problem Level:</span>
+                        <span class="info-label">Outage Level:</span>
                         <span id="brawlstars-problem" class="info-value">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Reports:</span>
+                        <span id="brawlstars-reports" class="info-value">-</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Last Updated:</span>
@@ -95,7 +95,7 @@
                 
                 <div class="action-buttons">
                     <button class="btn-refresh" onclick="fetchBrawlStarsStatus()">
-                        <span>🔄 Rescan Reports</span>
+                        <span>🔄 Refresh</span>
                     </button>
                 </div>
             </div>
@@ -103,17 +103,17 @@
         
         <div class="status-footer">
             <div class="last-checked">
-                <span>Last scan: </span>
+                <span>Last checked: </span>
                 <strong id="last-checked">-</strong>
             </div>
             <div class="note">
-                <small>📊 Status determined by analyzing DownDetector outage reports</small>
+                <small>📊 Fortnite: Multiple sources • Brawl Stars: DownDetector analysis</small>
             </div>
         </div>
 
         <div class="global-controls">
             <button class="btn-check-all" onclick="checkAllStatus()">
-                🔄 Scan All Games
+                🔄 Check All Games
             </button>
         </div>
     </main>

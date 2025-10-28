@@ -55,6 +55,22 @@
                         <span id="fortnite-updated" class="info-value">-</span>
                     </div>
                 </div>
+
+                <!-- Latest Tweet Section -->
+                <div class="tweet-section">
+                    <div class="tweet-header">
+                        <span class="tweet-title">Latest Update</span>
+                        <span class="tweet-source">@FortniteStatus</span>
+                    </div>
+                    <div id="fortnite-tweet" class="tweet-content">
+                        <div class="tweet-loading">Loading latest tweet...</div>
+                    </div>
+                    <div class="tweet-footer">
+                        <a href="https://twitter.com/FortniteStatus" target="_blank" class="tweet-link">
+                            View on Twitter →
+                        </a>
+                    </div>
+                </div>
                 
                 <div class="action-buttons">
                     <button class="btn-refresh" onclick="fetchFortniteStatus()">
@@ -113,7 +129,7 @@
                 <strong id="last-checked">-</strong>
             </div>
             <div class="note">
-                <small>📊 Fortnite: Multiple sources • Brawl Stars: DownDetector analysis</small>
+                <small>📊 Fortnite: Real-time data + Twitter • Brawl Stars: DownDetector analysis</small>
             </div>
         </div>
 
@@ -124,6 +140,7 @@
         </div>
     </main>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

@@ -298,61 +298,36 @@ main {
     font-weight: 500;
 }
 
-.tweet-content {
-    color: var(--light);
-    line-height: 1.5;
-    margin-bottom: 1rem;
-    min-height: 40px;
+.tweet-embed {
+    min-height: 300px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
 }
 
-.tweet-text {
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-}
-
-.tweet-meta {
+/* Twitter embed loading state */
+.tweet-embed:empty::before {
+    content: "Loading latest updates from @FortniteStatus...";
     display: flex;
-    justify-content: space-between;
-    color: var(--gray);
-    font-size: 0.75rem;
-    margin-top: 0.8rem;
-}
-
-.tweet-time {
-    color: var(--gray);
-}
-
-.tweet-link {
-    color: var(--twitter-blue);
-    text-decoration: none;
-    font-size: 0.8rem;
-    font-weight: 500;
-    transition: color 0.3s ease;
-}
-
-.tweet-link:hover {
-    color: #1a91da;
-}
-
-.tweet-footer {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 0.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.tweet-loading {
+    align-items: center;
+    justify-content: center;
+    height: 100px;
     color: var(--gray);
     font-style: italic;
     text-align: center;
-    padding: 1rem;
+    padding: 2rem;
 }
 
-.tweet-error {
-    color: var(--error);
-    text-align: center;
-    padding: 1rem;
-    font-size: 0.9rem;
+/* Custom Twitter embed styling */
+.twitter-timeline {
+    border-radius: 8px !important;
+}
+
+/* Ensure Twitter embed fits properly */
+iframe[id*="twitter-widget"] {
+    border-radius: 8px !important;
+    border: none !important;
+    min-height: 300px !important;
 }
 
 .action-buttons {
@@ -449,6 +424,10 @@ main {
         flex-direction: column;
         gap: 0.3rem;
         align-items: flex-start;
+    }
+    
+    .tweet-embed {
+        min-height: 250px;
     }
 }
 

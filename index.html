@@ -56,14 +56,14 @@
                     </div>
                 </div>
 
-                <!-- Latest Tweet Section -->
+                <!-- Twitter Updates Section -->
                 <div class="tweet-section">
                     <div class="tweet-header">
-                        <span class="tweet-title">Latest Update</span>
+                        <span class="tweet-title">Latest Updates</span>
                         <span class="tweet-source">@FortniteStatus</span>
                     </div>
                     <div id="fortnite-tweet" class="tweet-content">
-                        <div class="tweet-loading">Loading latest tweet...</div>
+                        <div class="tweet-loading">Loading latest updates...</div>
                     </div>
                     <div class="tweet-footer">
                         <a href="https://twitter.com/FortniteStatus" target="_blank" class="tweet-link">
@@ -73,7 +73,7 @@
                 </div>
                 
                 <div class="action-buttons">
-                    <button class="btn-refresh" onclick="fetchFortniteStatus()">
+                    <button class="btn-refresh" onclick="fetchFortniteStatus(); fetchFortniteTweet();">
                         <span>🔄 Refresh</span>
                     </button>
                 </div>

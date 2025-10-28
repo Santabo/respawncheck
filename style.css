@@ -34,21 +34,6 @@ body {
     height: 100%;
     z-index: -1;
     background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
-    overflow: hidden;
-}
-
-.particles {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-
-.particle {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
 }
 
 main {
@@ -56,8 +41,6 @@ main {
     margin: 0 auto;
     padding: 2rem 1rem;
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
 }
 
 .header {
@@ -72,13 +55,11 @@ main {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    text-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .subtitle {
     font-size: 1.2rem;
     color: var(--gray);
-    font-weight: 300;
 }
 
 .games-grid {
@@ -86,39 +67,25 @@ main {
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 2rem;
     margin-bottom: 2rem;
-    flex: 1;
 }
 
 .game-card {
     background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
+    border-radius: 15px;
     padding: 1.5rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    display: flex;
-    flex-direction: column;
-}
-
-.game-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
-    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .game-header {
     display: flex;
     align-items: center;
     margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .game-icon {
     width: 60px;
     height: 60px;
-    border-radius: 15px;
+    border-radius: 12px;
     margin-right: 1rem;
     display: flex;
     align-items: center;
@@ -138,7 +105,6 @@ main {
 .game-title {
     font-size: 1.8rem;
     font-weight: bold;
-    margin-bottom: 0.2rem;
 }
 
 .game-subtitle {
@@ -147,74 +113,37 @@ main {
 }
 
 .status-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     margin: 1.5rem 0;
-    padding: 1rem;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.05);
 }
 
 .status-badge {
     display: inline-block;
     padding: 0.6rem 1.2rem;
-    border-radius: 50px;
+    border-radius: 25px;
     font-weight: bold;
     text-transform: uppercase;
     font-size: 0.85rem;
     letter-spacing: 1px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .status-checking {
-    background: linear-gradient(135deg, var(--gray), #5a5a6d);
+    background: var(--gray);
 }
 
 .status-online {
-    background: linear-gradient(135deg, var(--success), #45a049);
+    background: var(--success);
 }
 
 .status-offline {
-    background: linear-gradient(135deg, var(--error), #da190b);
+    background: var(--error);
 }
 
 .status-maintenance {
-    background: linear-gradient(135deg, var(--warning), #e68900);
+    background: var(--warning);
 }
 
 .status-queue {
-    background: linear-gradient(135deg, var(--info), #0b7dda);
-}
-
-.status-issues {
-    background: linear-gradient(135deg, #FF9800, #F57C00);
-}
-
-.status-dots {
-    display: flex;
-    gap: 5px;
-}
-
-.dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--gray);
-    animation: pulse 1.5s infinite ease-in-out;
-}
-
-.dot:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.dot:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 0.4; transform: scale(0.8); }
-    50% { opacity: 1; transform: scale(1.2); }
+    background: var(--info);
 }
 
 .info-grid {
@@ -222,15 +151,14 @@ main {
     flex-direction: column;
     gap: 1rem;
     margin: 1.5rem 0;
-    flex: 1;
 }
 
 .info-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.8rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .info-item:last-child {
@@ -239,62 +167,39 @@ main {
 
 .info-label {
     color: var(--gray);
-    font-size: 0.9rem;
 }
 
 .info-value {
     font-weight: bold;
     text-align: right;
-    font-size: 0.95rem;
-}
-
-.error {
-    color: var(--error);
-    text-align: center;
-    padding: 0.8rem;
-    background: rgba(244, 67, 54, 0.1);
-    border-radius: 8px;
-    margin: 1rem 0;
-    border-left: 4px solid var(--error);
-}
-
-.action-buttons {
-    margin-top: auto;
 }
 
 .btn-refresh {
     width: 100%;
     padding: 0.8rem;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.1);
     color: var(--light);
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+    transition: background 0.3s ease;
 }
 
 .btn-refresh:hover {
     background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
 }
 
 .status-footer {
     text-align: center;
-    margin: 2rem 0;
+    margin-top: 2rem;
     padding: 1.5rem;
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
 }
 
 .last-checked {
     margin-bottom: 0.5rem;
-    font-size: 1rem;
 }
 
 .note {
@@ -302,30 +207,6 @@ main {
     font-size: 0.85rem;
 }
 
-.global-controls {
-    display: flex;
-    justify-content: center;
-    margin-top: 1rem;
-}
-
-.btn-check-all {
-    padding: 1rem 2rem;
-    border: none;
-    border-radius: 50px;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 5px 20px rgba(255, 107, 107, 0.3);
-}
-
-.btn-check-all:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
-}
-
-/* Responsive Design */
 @media (max-width: 768px) {
     .title {
         font-size: 2.5rem;
@@ -338,19 +219,4 @@ main {
     main {
         padding: 1rem;
     }
-    
-    .game-card {
-        padding: 1.2rem;
-    }
-}
-
-/* Animation for status changes */
-@keyframes statusChange {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-.status-change {
-    animation: statusChange 0.5s ease;
 }
